@@ -1,2 +1,3 @@
 [workspace]
-	members = ["viewer"]
+members = ["viewer"]
+resolver = "2"
