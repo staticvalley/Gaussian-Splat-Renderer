@@ -15,3 +15,41 @@ target
 
 # rustc will dump stack traces when hitting an internal compiler error to PWD
 rustc-ice-*.txt
+
+
+# Python virtual environments
+.ven/
+.venv/
+env/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
+# Large data/model files
+data/
+datasets/
+outputs/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.ply
+*.npz
