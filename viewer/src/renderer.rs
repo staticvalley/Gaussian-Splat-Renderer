@@ -1,6 +1,11 @@
 use std::sync::Arc;
 use winit::{dpi::PhysicalSize, window::Window};
 
+use wgpu::util::DeviceExt;
+
+use crate::camera::Camera;
+use crate::mesh::{VERTICES, Vertex};
+
 pub struct Renderer {
     /// surface handle
     surface: wgpu::Surface<'static>,    
@@ -9,7 +14,13 @@ pub struct Renderer {
     /// gpu command queue
     queue: wgpu::Queue,
     /// surface settings
-    config: wgpu::SurfaceConfiguration
+    config: wgpu::SurfaceConfiguration,
+    /// render pipeline
+    pipeline: wgpu::RenderPipeline,
+    /// vertex data
+    vertex_buffer: wgpu::Buffer,
+    /// camera
+    camera: Camera,
 }
 
 impl Renderer {
@@ -46,7 +57,67 @@ impl Renderer {
         };
         surface.configure(&device, &config);
 
-        Self { surface, device, queue, config }
+        // create shader pipeline
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Basic Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+        });
+
+        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Render Pipeline Layout"),
+            bind_group_layouts: &[],
+            immediate_size: 0,
+        });
+
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Render Pipeline"),
+            layout: Some(&render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                buffers: &[
+                    Vertex::desc(),
+                ],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                unclipped_depth: false,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview_mask: None,
+            cache: None,
+        });
+
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        let camera = Camera::new();
+
+        Self { surface, device, queue, config, pipeline, vertex_buffer, camera }
     }
 
     /// reconfigure surface on window resize
@@ -87,7 +158,8 @@ impl Renderer {
         // simple render to clear screen
         {
 
-            let clear_color_attachment = wgpu::RenderPassColorAttachment {
+            let mut _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,
                 resolve_target: None,
                 depth_slice: None,
@@ -97,12 +169,17 @@ impl Renderer {
                     // store results after pass renders
                     store: wgpu::StoreOp::Store,
                 },
-            };
-
-            let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[Some(clear_color_attachment)],
+            })],
                 ..Default::default()
             });
+
+            // start render!
+
+            _pass.set_pipeline(&self.pipeline);
+
+            _pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+
+            _pass.draw(0..(VERTICES.len() as u32), 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
