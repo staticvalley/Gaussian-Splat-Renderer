@@ -4,7 +4,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 use wgpu::util::DeviceExt;
 
 use crate::camera::Camera;
-use crate::mesh::{VERTICES, Vertex};
+use crate::mesh::{VERTICES, INDICES, Vertex};
 
 pub struct Renderer {
     /// surface handle
@@ -19,6 +19,8 @@ pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
     /// vertex data
     vertex_buffer: wgpu::Buffer,
+    /// index data
+    index_buffer: wgpu::Buffer,
     /// camera
     camera: Camera,
 }
@@ -115,9 +117,17 @@ impl Renderer {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
+        let index_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(INDICES),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
+
         let camera = Camera::new();
 
-        Self { surface, device, queue, config, pipeline, vertex_buffer, camera }
+        Self { surface, device, queue, config, pipeline, vertex_buffer, index_buffer, camera }
     }
 
     /// reconfigure surface on window resize
@@ -176,10 +186,10 @@ impl Renderer {
             // start render!
 
             _pass.set_pipeline(&self.pipeline);
-
             _pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            _pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
-            _pass.draw(0..(VERTICES.len() as u32), 0..1);
+            _pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
