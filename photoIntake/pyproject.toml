@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=70.2.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "photo-intake"
+version = "0.1.0"
+description = "Photo intake and training pipeline for Gaussian splatting"
+requires-python = ">=3.11"
+
+dependencies = [
+    "numpy",
+    "opencv-python",
+    "matplotlib",
+    "torch",
+    "torchvision",
+    "pillow",
+    "tqdm",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "black",
+]
