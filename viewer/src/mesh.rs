@@ -1,34 +1,36 @@
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
-pub struct Vertex {
+pub struct GaussianVertex {
     position: [f32; 3],
+    normal: [f32; 3],
     color: [f32; 3],
 }
 
-impl Vertex {
+impl GaussianVertex {
 
     // vertex layout descriptor
-    const ATTRIBUTES: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![
+    const ATTRIBUTES: [wgpu::VertexAttribute; 3] = wgpu::vertex_attr_array![
         0 => Float32x3, // position
-        1 => Float32x3, // color
+        1 => Float32x3, // normal
+        2 => Float32x3, // color
     ];
 
     /// get a vertex buffer layout descriptor for a pipeline
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<GaussianVertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &Self::ATTRIBUTES,
         }
     }
 }
 
-pub const VERTICES: &[Vertex] = &[
-    Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
-    Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
-    Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
-    Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
-    Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+pub const VERTICES: &[GaussianVertex] = &[
+    GaussianVertex { position: [-0.0868241, 0.49240386, 0.0], normal: [0.0, 1.0, 0.0], color: [0.5, 0.0, 0.5] }, // A
+    GaussianVertex { position: [-0.49513406, 0.06958647, 0.0], normal: [0.0, 1.0, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    GaussianVertex { position: [-0.21918549, -0.44939706, 0.0], normal: [0.0, 1.0, 0.0], color: [0.5, 0.0, 0.5] }, // C
+    GaussianVertex { position: [0.35966998, -0.3473291, 0.0], normal: [0.0, 1.0, 0.0], color: [0.5, 0.0, 0.5] }, // D
+    GaussianVertex { position: [0.44147372, 0.2347359, 0.0], normal: [0.0, 1.0, 0.0], color: [0.5, 0.0, 0.5] }, // E
 ];
 
 pub const INDICES: &[u16] = &[
