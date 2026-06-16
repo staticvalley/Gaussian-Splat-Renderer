@@ -2,6 +2,7 @@ mod app;
 mod renderer;
 mod camera;
 mod mesh;
+mod parser;
 
 use app::App;
 use winit::event_loop::{ControlFlow, EventLoop};

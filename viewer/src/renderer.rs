@@ -5,7 +5,7 @@ use winit::{dpi::PhysicalSize, window::Window};
 use wgpu::util::DeviceExt;
 
 use crate::camera::{Camera, CameraUniform};
-use crate::mesh::{VERTICES, INDICES, GaussianVertex};
+use crate::mesh::{VERTICES, INDICES, Vertex};
 
 struct CameraState {
     camera: Camera,
@@ -135,7 +135,7 @@ impl Renderer {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 buffers: &[
-                    GaussianVertex::desc(),
+                    Vertex::desc(),
                 ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
