@@ -141,9 +141,9 @@ impl CameraController {
         }
     }
 
-    pub fn handle_mouse(&mut self, dx: f32, dy: f32) {
-        self.pitch_change = dy * self.mouse_sensitivity;
-        self.yaw_change = dx * self.mouse_sensitivity;
+    pub fn handle_mouse_drag(&mut self, dx: f32, dy: f32) {
+        self.pitch_change = -dy * self.mouse_sensitivity;
+        self.yaw_change = -dx * self.mouse_sensitivity;
     }
 
     pub fn update_camera(&mut self, camera: &mut Camera) {

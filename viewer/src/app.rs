@@ -1,16 +1,17 @@
 use std::sync::Arc;
 use winit::{
-    application::ApplicationHandler, event::{DeviceEvent, ElementState, WindowEvent}, event_loop::ActiveEventLoop, keyboard::{KeyCode, PhysicalKey}, window::{CursorGrabMode, Window, WindowId}
+    application::ApplicationHandler, event::{DeviceEvent, ElementState, MouseButton, WindowEvent}, event_loop::ActiveEventLoop, keyboard::{KeyCode, PhysicalKey}, window::{CursorGrabMode, CursorIcon, Window, WindowId}
 };
-use crate::renderer::Renderer;
+use crate::renderer::{self, Renderer};
 use crate::camera::CameraController;
  
 #[derive(Default)]
 pub struct App {
     /// reference to window and renderer (both None until created)
-    state: Option<(Arc<Window>, Renderer)>,
+    window: Option<Arc<Window>>,
+    renderer: Option<Renderer>,
     camera_controller: CameraController,
-    cursor_locked: bool,
+    is_dragging: bool,
 }
  
 impl ApplicationHandler for App {
@@ -27,19 +28,17 @@ impl ApplicationHandler for App {
         let renderer = pollster::block_on(Renderer::new(Arc::clone(&window)));
 
         // assign state
-        self.state = Some((window, renderer));
+        self.window = Some(window);
+        self.renderer = Some(renderer);
         self.camera_controller = CameraController::new();
-        
-        self.cursor_locked = true;
-        let (window, _) = self.state.as_ref().unwrap();
-        App::update_cursor_state(window, self.cursor_locked);
     }
  
     // something has happened to the window (resizing, drawing, closing)
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
 
         // get window and renderer from state
-        let Some((window, renderer)) = &mut self.state else { return };
+        let Some(window) = &mut self.window else { return };
+        let Some(renderer) = &mut self.renderer else { return };
 
         // handle certain event
         match event {
@@ -55,36 +54,32 @@ impl ApplicationHandler for App {
             WindowEvent::KeyboardInput { event, .. } => {
                 if let PhysicalKey::Code(code) = event.physical_key {
                     let is_pressed = event.state == ElementState::Pressed;
-                    if is_pressed && code == KeyCode::Tab {
-                        self.cursor_locked = !self.cursor_locked;
-                        App::update_cursor_state(window, self.cursor_locked);
-                    }
                     self.camera_controller.handle_keyboard(code, is_pressed);
                 }
             },
+            WindowEvent::MouseInput { state, button: MouseButton::Left, .. } => {
+                let is_pressed = state == ElementState::Pressed;
+                self.is_dragging = is_pressed;
+            }
             _ => {}
         }
     }
 
     fn device_event( &mut self, _event_loop: &ActiveEventLoop, _device_id: winit::event::DeviceId, event: winit::event::DeviceEvent) {
-        if let DeviceEvent::MouseMotion { delta: (dx, dy) } = event {
-            if self.cursor_locked {
-                self.camera_controller.handle_mouse(dx as f32, dy as f32);
-            }
+        
+        // get window and renderer from state
+        let Some(window) = &mut self.window else {return};
+
+        match event {
+            DeviceEvent::MouseMotion { delta: (dx, dy) } => {
+                if self.is_dragging {
+                    window.set_cursor(CursorIcon::Grabbing);
+                    self.camera_controller.handle_mouse_drag(dx as f32, dy as f32);
+                } else {
+                    window.set_cursor(CursorIcon::Grab);
+                }
+            },
+            _ => {}
         }
     }
-}
-
-impl App {
-
-    fn update_cursor_state(window: &Arc<Window>, cursor_locked: bool) {
-        let grab = if cursor_locked {
-            CursorGrabMode::Locked
-        } else {
-            CursorGrabMode::None
-        };
-        window.set_cursor_grab(grab).ok();
-        window.set_cursor_visible(!cursor_locked);
-    }
-
 }
